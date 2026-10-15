@@ -10,7 +10,9 @@ The initial citizen-to-GRO path, React Native app, Next.js website, shared API/t
 - Shared API-client tests and both TypeScript checks: passed.
 - Next.js production build: passed.
 - Expo SDK dependency compatibility and Android Metro export: passed. No physical Android/emulator execution is claimed.
-- Live PostGIS, browser results and GitHub check status are recorded after their respective runs; a workflow file alone is not proof of a successful run.
+- PostgreSQL/PostGIS in GitHub Actions: **24 API/spatial tests passed**, including the migrated geography column and the same citizen/GRO workflow. The first successful source snapshot is `754464c`; [verified run](https://github.com/MK00315/GrievanceGrid/actions/runs/38791237020).
+- Browser end-to-end checks: **2 passed locally and in CI**. These cover separate citizen/officer browser sessions and a phone-width sign-in layout. The final QA correction keeps the list status in sync when refreshing an open record.
+- Shared-client tests: **6 passed**. Both TypeScript checks, Next.js production build and the Android Metro bundle passed locally and in CI at the initial verified source snapshot. See the [latest checks](https://github.com/MK00315/GrievanceGrid/actions) for subsequent commits.
 - Python dependency audit: no known advisories reported. Expo tooling has unresolved dependency warnings described in SECURITY.md.
 - Live S3, Docker Compose startup, real-device permissions, TLS/hosting, backup recovery, load testing and real municipal use: not yet verified.
 
