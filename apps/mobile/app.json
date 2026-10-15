@@ -2,6 +2,10 @@
   "expo": {
     "name": "GrievanceGrid", "slug": "grievancegrid", "version": "0.1.0",
     "orientation": "portrait", "userInterfaceStyle": "light",
-    "android": {"package": "com.grievancegrid.app"}
+    "android": {"package": "com.grievancegrid.app"},
+    "plugins": [
+      ["expo-location", {"locationWhenInUsePermission": "Allow GrievanceGrid to add the problem's location to a complaint."}],
+      ["expo-image-picker", {"photosPermission": "Choose a civic complaint photograph.", "cameraPermission": false, "microphonePermission": false}]
+    ]
   }
 }
