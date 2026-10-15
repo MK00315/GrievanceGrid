@@ -68,7 +68,7 @@ jobs:
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/gg-api.log 2>&1 &
           cd ..
           npm run start --workspace=@grievancegrid/web > /tmp/gg-web.log 2>&1 &
-          python -c "import urllib.request,time; time.sleep(3); urllib.request.urlopen('http://localhost:8000/ready'); urllib.request.urlopen('http://localhost:3000')"
+          python backend/tests/wait_for_servers.py
       - name: Test citizen-to-officer browser journey
         working-directory: apps/web
         run: npx playwright test
