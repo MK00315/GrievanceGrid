@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -63,7 +63,16 @@ class StatusUpdate(Input):
     expected_version: int = Field(ge=1)
 
 
-class EvidenceOut(BaseModel):
+class Timestamped(BaseModel):
+    @field_validator("*", mode="after")
+    @classmethod
+    def utc_dates(cls, value):
+        if isinstance(value, datetime) and value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value
+
+
+class EvidenceOut(Timestamped):
     model_config = ConfigDict(from_attributes=True)
     id: str
     media_type: str
@@ -71,7 +80,7 @@ class EvidenceOut(BaseModel):
     uploaded_at: datetime
 
 
-class EventOut(BaseModel):
+class EventOut(Timestamped):
     model_config = ConfigDict(from_attributes=True)
     id: str
     status: str
@@ -79,7 +88,7 @@ class EventOut(BaseModel):
     created_at: datetime
 
 
-class ComplaintOut(BaseModel):
+class ComplaintOut(Timestamped):
     model_config = ConfigDict(from_attributes=True)
     id: str
     tracking_id: str
