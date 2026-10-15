@@ -6,8 +6,13 @@ from app.config import get_settings
 from app.models import AuthSession, Role, User
 from app.schemas import Login, Register, TokenOut, UserOut
 from app.security import (
-    Credentials, CurrentUser, Database, dummy_hash, new_session,
-    password_hasher, token_digest,
+    Credentials,
+    CurrentUser,
+    Database,
+    dummy_hash,
+    new_session,
+    password_hasher,
+    token_digest,
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -16,8 +21,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/register", response_model=UserOut, status_code=201)
 def register(data: Register, db: Database):
     user = User(
-        email=str(data.email).lower(), name=data.name,
-        password_hash=password_hasher.hash(data.password), role=Role.CITIZEN,
+        email=str(data.email).lower(),
+        name=data.name,
+        password_hash=password_hasher.hash(data.password),
+        role=Role.CITIZEN,
         jurisdiction_id=get_settings().jurisdiction_id,
     )
     db.add(user)

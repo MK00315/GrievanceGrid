@@ -13,13 +13,15 @@ class Base(DeclarativeBase):
 
 def make_engine(url: str):
     if url.startswith("sqlite:///./"):
-        Path(url.removeprefix("sqlite:///" )).parent.mkdir(parents=True, exist_ok=True)
+        Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
     options = {"check_same_thread": False} if url.startswith("sqlite") else {}
     engine = create_engine(url, connect_args=options, pool_pre_ping=True)
     if url.startswith("sqlite"):
+
         @event.listens_for(engine, "connect")
         def sqlite_foreign_keys(connection, _):
             connection.execute("PRAGMA foreign_keys=ON")
+
     return engine
 
 

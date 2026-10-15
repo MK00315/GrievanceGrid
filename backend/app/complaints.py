@@ -23,21 +23,25 @@ TRANSITIONS = {
 }
 
 
-def detail(db, complaint):
-    return ComplaintDetail(
-        **ComplaintDetail.model_validate(complaint, from_attributes=True,
-            update={}).model_dump()
-    )
-
-
 def complaint_detail(db, complaint):
     from app.schemas import ComplaintOut
+
     return ComplaintDetail(
         **ComplaintOut.model_validate(complaint).model_dump(),
-        events=list(db.scalars(select(StatusEvent).where(
-            StatusEvent.complaint_id == complaint.id).order_by(StatusEvent.created_at, StatusEvent.id))),
-        evidence=list(db.scalars(select(Evidence).where(
-            Evidence.complaint_id == complaint.id).order_by(Evidence.uploaded_at, Evidence.id))),
+        events=list(
+            db.scalars(
+                select(StatusEvent)
+                .where(StatusEvent.complaint_id == complaint.id)
+                .order_by(StatusEvent.created_at, StatusEvent.id)
+            )
+        ),
+        evidence=list(
+            db.scalars(
+                select(Evidence)
+                .where(Evidence.complaint_id == complaint.id)
+                .order_by(Evidence.uploaded_at, Evidence.id)
+            )
+        ),
     )
 
 
@@ -50,8 +54,11 @@ def submit(data: ComplaintCreate, user: CurrentUser, db: Database):
     request_id = str(data.client_request_id)
 
     def existing_retry():
-        existing = db.scalar(select(Complaint).where(
-            Complaint.citizen_id == user.id, Complaint.client_request_id == request_id))
+        existing = db.scalar(
+            select(Complaint).where(
+                Complaint.citizen_id == user.id, Complaint.client_request_id == request_id
+            )
+        )
         if existing and existing.request_hash != request_hash:
             raise HTTPException(409, "Retry ID already used with different complaint details")
         return existing
@@ -61,15 +68,23 @@ def submit(data: ComplaintCreate, user: CurrentUser, db: Database):
         return complaint_detail(db, existing)
     complaint = Complaint(
         **{k: v for k, v in payload.items() if k != "client_request_id"},
-        client_request_id=request_id, request_hash=request_hash, citizen_id=user.id,
+        client_request_id=request_id,
+        request_hash=request_hash,
+        citizen_id=user.id,
         jurisdiction_id=get_settings().jurisdiction_id,
         tracking_id=f"GG-{now_utc():%Y}-{secrets.token_hex(6).upper()}",
     )
     db.add(complaint)
     try:
         db.flush()
-        db.add(StatusEvent(complaint_id=complaint.id, actor_id=user.id,
-                           status="submitted", note="Complaint received. Awaiting officer review."))
+        db.add(
+            StatusEvent(
+                complaint_id=complaint.id,
+                actor_id=user.id,
+                status="submitted",
+                note="Complaint received. Awaiting officer review.",
+            )
+        )
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -82,7 +97,8 @@ def submit(data: ComplaintCreate, user: CurrentUser, db: Database):
 
 @router.get("", response_model=ComplaintPage)
 def list_complaints(
-    user: CurrentUser, db: Database,
+    user: CurrentUser,
+    db: Database,
     status: ComplaintStatus | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 25,
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -97,8 +113,11 @@ def list_complaints(
     if status is not None:
         query = query.where(Complaint.status == status)
     total = db.scalar(select(func.count()).select_from(query.subquery()))
-    items = list(db.scalars(query.order_by(Complaint.received_at.desc(), Complaint.id)
-                           .offset(offset).limit(limit)))
+    items = list(
+        db.scalars(
+            query.order_by(Complaint.received_at.desc(), Complaint.id).offset(offset).limit(limit)
+        )
+    )
     return ComplaintPage(items=items, total=total, offset=offset, limit=limit)
 
 
@@ -116,15 +135,21 @@ def set_status(tracking_id: str, data: StatusUpdate, user: CurrentUser, db: Data
         raise HTTPException(409, "Complaint changed. Refresh before updating")
     if data.status not in TRANSITIONS[complaint.status]:
         raise HTTPException(422, "Status transition is not allowed")
-    result = db.execute(update(Complaint).where(
-        Complaint.id == complaint.id, Complaint.version == data.expected_version,
-    ).values(status=data.status, version=data.expected_version + 1, updated_at=now_utc())
-        .execution_options(synchronize_session=False))
+    result = db.execute(
+        update(Complaint)
+        .where(
+            Complaint.id == complaint.id,
+            Complaint.version == data.expected_version,
+        )
+        .values(status=data.status, version=data.expected_version + 1, updated_at=now_utc())
+        .execution_options(synchronize_session=False)
+    )
     if result.rowcount != 1:
         db.rollback()
         raise HTTPException(409, "Complaint changed. Refresh before updating")
-    db.add(StatusEvent(complaint_id=complaint.id, actor_id=user.id,
-                       status=data.status, note=data.note))
+    db.add(
+        StatusEvent(complaint_id=complaint.id, actor_id=user.id, status=data.status, note=data.note)
+    )
     db.commit()
     db.refresh(complaint)
     return complaint_detail(db, complaint)

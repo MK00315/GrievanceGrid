@@ -1,4 +1,5 @@
 """Local account provisioning; never expose this as a public API."""
+
 import argparse
 from getpass import getpass
 
@@ -29,9 +30,15 @@ def main():
     with SessionLocal() as db:
         if db.scalar(select(User).where(User.email == email)):
             parser.error("Account already exists; no changes made")
-        db.add(User(email=email, name=args.name.strip(), role=args.role,
-                    jurisdiction_id=args.jurisdiction.strip(),
-                    password_hash=password_hasher.hash(password)))
+        db.add(
+            User(
+                email=email,
+                name=args.name.strip(),
+                role=args.role,
+                jurisdiction_id=args.jurisdiction.strip(),
+                password_hash=password_hasher.hash(password),
+            )
+        )
         db.commit()
     print(f"Created {args.role} account in {args.jurisdiction}. No default password was saved.")
 
