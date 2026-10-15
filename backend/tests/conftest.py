@@ -1,5 +1,8 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
 from app.config import get_settings
@@ -10,6 +13,20 @@ from app.models import Role, User
 
 @pytest.fixture
 def db_factory(tmp_path):
+    postgres_url = os.getenv("GG_TEST_DATABASE_URL")
+    if postgres_url:
+        if not make_url(postgres_url).database.endswith("_test"):
+            raise ValueError("Integration tests require a dedicated database ending in _test")
+        engine = make_engine(postgres_url)
+        with engine.connect() as connection:
+            transaction = connection.begin()
+            factory = sessionmaker(
+                bind=connection, expire_on_commit=False, join_transaction_mode="create_savepoint"
+            )
+            yield factory
+            transaction.rollback()
+        engine.dispose()
+        return
     engine = make_engine(f"sqlite:///{tmp_path / 'test.db'}")
     Base.metadata.create_all(engine)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
