@@ -1,0 +1,111 @@
+from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.models import Category, ComplaintStatus
+
+
+class Input(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
+
+
+class Register(Input):
+    name: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def preserve_password(cls, value):
+        # Password whitespace is significant; override Input's string trimming.
+        return value
+
+
+class Login(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    email: str
+    role: str
+    jurisdiction_id: str
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_at: datetime
+    user: UserOut
+
+
+class ComplaintCreate(Input):
+    client_request_id: UUID
+    title: str = Field(min_length=5, max_length=160)
+    description: str = Field(min_length=20, max_length=5000)
+    category: Category
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    location_text: str = Field(min_length=5, max_length=240)
+    location_source: Literal["manual", "device"] = "manual"
+    image_note: str | None = Field(default=None, max_length=500)
+
+
+class StatusUpdate(Input):
+    status: ComplaintStatus
+    note: str = Field(min_length=10, max_length=2000)
+    expected_version: int = Field(ge=1)
+
+
+class EvidenceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    media_type: str
+    size_bytes: int
+    uploaded_at: datetime
+
+
+class EventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    status: str
+    note: str
+    created_at: datetime
+
+
+class ComplaintOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    tracking_id: str
+    title: str
+    description: str
+    category: str
+    latitude: float
+    longitude: float
+    location_text: str
+    location_source: str
+    image_note: str | None
+    jurisdiction_id: str
+    status: str
+    version: int
+    received_at: datetime
+    updated_at: datetime
+    analysis_state: Literal["disabled"] = "disabled"
+
+
+class ComplaintDetail(ComplaintOut):
+    events: list[EventOut]
+    evidence: list[EvidenceOut]
+
+
+class ComplaintPage(BaseModel):
+    items: list[ComplaintOut]
+    total: int
+    offset: int
+    limit: int
