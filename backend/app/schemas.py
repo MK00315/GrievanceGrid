@@ -11,16 +11,16 @@ class Input(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, allow_inf_nan=False)
 
 
-class Register(Input):
+class Register(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     name: str = Field(min_length=2, max_length=120)
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
 
-    @field_validator("password", mode="before")
+    @field_validator("name", "email", mode="before")
     @classmethod
-    def preserve_password(cls, value):
-        # Password whitespace is significant; override Input's string trimming.
-        return value
+    def trim_identity(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class Login(BaseModel):
