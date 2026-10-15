@@ -1,0 +1,7 @@
+{
+  "expo": {
+    "name": "GrievanceGrid", "slug": "grievancegrid", "version": "0.1.0",
+    "orientation": "portrait", "userInterfaceStyle": "light",
+    "android": {"package": "com.grievancegrid.app"}
+  }
+}
