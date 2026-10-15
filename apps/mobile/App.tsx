@@ -94,6 +94,7 @@ export default function App() {
   async function open(id: string) {
     const result = await client.get(id.trim());
     setSelected(result); setNextStatus(transitions[result.status][0]); setNote("");
+    await load(page.offset);
   }
   async function signIn() {
     if (register) await client.register(name, email, password);

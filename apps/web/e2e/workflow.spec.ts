@@ -34,6 +34,7 @@ test("citizen submits; GRO reviews; citizen sees the same record", async ({brows
   await expect(officer.getByRole("status")).toHaveText("Officer update saved.");
   await citizen.getByRole("button", {name: "Refresh record"}).click();
   await expect(citizen.locator(".timeline")).toContainText("Accepted for inspection by the municipal roads team.");
+  await expect(citizen.locator(".reports .badge")).toHaveText("under review");
   await citizen.screenshot({path: "test-results/citizen-updated.png", fullPage: true});
   await officer.screenshot({path: "test-results/officer-updated.png", fullPage: true});
   await citizenContext.close(); await officerContext.close();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, createClient, labels, statusLabel, transitions } from "@grievancegrid/api-client";
 import type { Auth, Category, Client, Config, Detail, Page, Status } from "@grievancegrid/api-client";
 
@@ -32,7 +32,7 @@ export default function Home() {
   const [page, setPage] = useState<Page>({items: [], total: 0, offset: 0, limit: 25});
   const [selected, setSelected] = useState<Detail | null>(null);
   const [filter, setFilter] = useState<Status | "">("");
-  const [requestId, setRequestId] = useState("");
+  const requestId = useRef("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [source, setSource] = useState<"manual" | "device">("manual");
@@ -60,6 +60,7 @@ export default function Home() {
   async function open(tracking: string) {
     const result = await client.get(tracking.trim());
     setSelected(result); setStatus(transitions[result.status][0]);
+    await load(page.offset);
   }
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -75,7 +76,7 @@ export default function Home() {
     const form = event.currentTarget;
     const data = new FormData(form);
     await run(async () => {
-      const retryId = requestId || crypto.randomUUID(); setRequestId(retryId);
+      const retryId = requestId.current || crypto.randomUUID(); requestId.current = retryId;
       const result = await client.submit({
         client_request_id: retryId, title: String(data.get("title")),
         description: String(data.get("description")), category: String(data.get("category")) as Category,
@@ -83,7 +84,7 @@ export default function Home() {
         location_text: String(data.get("location_text")), location_source: source,
         image_note: String(data.get("image_note") || "") || null,
       });
-      setRequestId(""); setSelected(result); setStatus("under_review");
+      requestId.current = ""; setSelected(result); setStatus("under_review");
       const photo = data.get("photo");
       form.reset(); setLatitude(""); setLongitude(""); setSource("manual");
       setNotice(`Complaint saved. Tracking ID: ${result.tracking_id}.`);
@@ -136,7 +137,7 @@ export default function Home() {
           <div>
             {isCitizen && <section className="panel"><h2>Submit a complaint</h2>
               <p className="muted">Unsupported complaint types are outside this pilot. No photograph? Explain below and an officer can review it.</p>
-              <form onSubmit={submit} onChange={() => setRequestId("")}>
+              <form onSubmit={submit} onChange={() => {requestId.current = "";}}>
                 <label>Category<select name="category" required>{Object.entries(labels).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></label>
                 <label>Title<input name="title" required minLength={5} maxLength={160} /></label>
                 <label>Describe the problem<textarea name="description" required minLength={20} maxLength={5000} rows={4} /></label>
